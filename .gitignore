@@ -176,3 +176,4 @@ cython_debug/
 # Pre-commit configuration
 .pre-commit-config.yaml
 .pre-commit/
+*.srt
