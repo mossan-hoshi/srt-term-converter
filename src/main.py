@@ -64,9 +64,61 @@ def process_text(text, pattern, replacement):
     return text
 
 
+# 新規追加: 字幕間の隙間を埋める関数
+def fill_subtitle_gaps(blocks, gap_threshold):
+    """
+    字幕ブロック間の隙間が閾値以下の場合、隙間を埋めるように調整する
+    gap_threshold: 秒単位での閾値
+    """
+    if len(blocks) < 2 or gap_threshold <= 0:
+        return blocks
+
+    adjusted_blocks = []
+
+    for i, block in enumerate(blocks):
+        current_block = block.copy()
+
+        # タイムスタンプを解析
+        ts_parts = current_block["timestamp"].split(" --> ")
+        current_start = parse_timestamp(ts_parts[0])
+        current_end = parse_timestamp(ts_parts[1])
+
+        # 次のブロックがある場合、隙間をチェック
+        if i < len(blocks) - 1:
+            next_ts_parts = blocks[i + 1]["timestamp"].split(" --> ")
+            next_start = parse_timestamp(next_ts_parts[0])
+
+            gap = next_start - current_end
+
+            # 隙間が閾値以下の場合、中間点まで延長
+            if 0 < gap <= gap_threshold:
+                midpoint = current_end + gap / 2
+                current_end = midpoint
+
+                # 次のブロックの開始時間も調整（次の処理で反映）
+                if i + 1 < len(blocks):
+                    next_block = blocks[i + 1].copy()
+                    next_ts_parts = next_block["timestamp"].split(" --> ")
+                    next_end = parse_timestamp(next_ts_parts[1])
+
+                    adjusted_timestamp = (
+                        f"{format_timestamp(midpoint)} --> {format_timestamp(next_end)}"
+                    )
+                    blocks[i + 1]["timestamp"] = adjusted_timestamp
+
+        # 調整されたタイムスタンプを設定
+        adjusted_timestamp = (
+            f"{format_timestamp(current_start)} --> {format_timestamp(current_end)}"
+        )
+        current_block["timestamp"] = adjusted_timestamp
+        adjusted_blocks.append(current_block)
+
+    return adjusted_blocks
+
+
 # SRT全体の変換処理：各ブロックのテキストを1文字ずつに分解し、正規表現置換を実施
-# 変更: 1ブロック内の列数・行数指定に従ってブロックをグループ化するためのパラメータを追加
-def convert_srt(filepath, regex_pairs, block_cols, block_rows):
+# 変更: gap_threshold パラメータを追加
+def convert_srt(filepath, regex_pairs, block_cols, block_rows, gap_threshold=0.0):
     # 元のSRTブロックから文字単位のデータを作成
     original_blocks = parse_srt(filepath)
     char_data = []
@@ -157,6 +209,11 @@ def convert_srt(filepath, regex_pairs, block_cols, block_rows):
             {"id": str(new_id), "timestamp": timestamp_str, "text": text_block}
         )
         new_id += 1
+
+    # 新規追加: 字幕間の隙間を埋める処理
+    if gap_threshold > 0:
+        new_blocks = fill_subtitle_gaps(new_blocks, gap_threshold)
+
     return new_blocks
 
 
@@ -165,7 +222,7 @@ class SRTConverterApp(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("SRT Term Converter")
-        self.geometry("700x600")
+        self.geometry("700x650")  # 高さを少し増加
         self.csv_path = Path("./replace_terms.csv")  # CSVファイルパス
 
         # SRTファイル入力
@@ -204,7 +261,7 @@ class SRTConverterApp(ctk.CTk):
         )
         self.block_cols_entry = ctk.CTkEntry(self)
         self.block_cols_entry.grid(row=4, column=1, padx=10, pady=(10, 0))
-        self.block_cols_entry.insert(0, "35")
+        self.block_cols_entry.insert(0, "28")
         ctk.CTkLabel(self, text="ブロックの行数 (1ブロックあたりの最大行数)").grid(
             row=5, column=0, padx=10, pady=(10, 0), sticky="w"
         )
@@ -212,18 +269,26 @@ class SRTConverterApp(ctk.CTk):
         self.block_rows_entry.grid(row=5, column=1, padx=10, pady=(10, 0))
         self.block_rows_entry.insert(0, "2")
 
-        # 変換実行ボタン
+        # 新規追加: 字幕間隙間埋め設定
+        ctk.CTkLabel(self, text="字幕間隙間埋め閾値 (秒、0で無効)").grid(
+            row=6, column=0, padx=10, pady=(10, 0), sticky="w"
+        )
+        self.gap_threshold_entry = ctk.CTkEntry(self)
+        self.gap_threshold_entry.grid(row=6, column=1, padx=10, pady=(10, 0))
+        self.gap_threshold_entry.insert(0, "1.5")
+
+        # 変換実行ボタン（行番号を調整）
         self.execute_btn = ctk.CTkButton(
             self, text="変換実行", command=self.execute_conversion
         )
-        self.execute_btn.grid(row=6, column=0, columnspan=2, padx=10, pady=10)
+        self.execute_btn.grid(row=7, column=0, columnspan=2, padx=10, pady=10)
 
-        # エラー表示エリア
+        # エラー表示エリア（行番号を調整）
         ctk.CTkLabel(self, text="エラー/メッセージ").grid(
-            row=7, column=0, padx=10, pady=(10, 0), sticky="w"
+            row=8, column=0, padx=10, pady=(10, 0), sticky="w"
         )
         self.error_textbox = ctk.CTkTextbox(self, width=400, height=100)
-        self.error_textbox.grid(row=8, column=0, columnspan=2, padx=10, pady=10)
+        self.error_textbox.grid(row=9, column=0, columnspan=2, padx=10, pady=10)
 
         self.grid_columnconfigure(0, weight=1)
 
@@ -308,12 +373,15 @@ class SRTConverterApp(ctk.CTk):
         try:
             block_cols = int(self.block_cols_entry.get().strip())
             block_rows = int(self.block_rows_entry.get().strip())
+            gap_threshold = float(self.gap_threshold_entry.get().strip())
         except ValueError:
-            self.log_message("ブロックの列数と行数は整数で指定してください。")
+            self.log_message("ブロックの列数と行数は整数、隙間閾値は数値で指定してください。")
             return
 
         try:
-            blocks = convert_srt(srt_filepath, regex_pairs, block_cols, block_rows)
+            blocks = convert_srt(
+                srt_filepath, regex_pairs, block_cols, block_rows, gap_threshold
+            )
             converted_text = reassemble_srt(blocks)
             base = srt_path.stem
             output_file = output_folder_path / (base + "_converted.srt")

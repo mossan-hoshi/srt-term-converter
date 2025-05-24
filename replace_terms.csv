@@ -15,10 +15,8 @@
 というところです?,と
 でして,で
 ですね,。
+そうですよ?ね。,
 こんな感じで,
-[。、]*(。)+[。、]*,。
-。で[。、],。
-、で[。、],、
 普通に,
 ご視聴ありがとうございました,
 おやすみなさい,
@@ -47,7 +45,7 @@ Cプラ,C++
 クロード,Claude
 ソネット,Sonnet
 エージェント,Agent
-オープンAI,OpenAI
+オープン ?AI,OpenAI
 ラズパイ,Raspberry Pi
 コパイロット,Copilot
 ピックスバース,PixVerse
@@ -55,7 +53,15 @@ Cプラ,C++
 クリングAI,KLING AI
 クリングエーアイ,KLING AI
 クリング,KLING AI
-[iI]magen [tT]hree|IMAGENIII|IMAGENスプレー|IMAGINEスピーカー|イメージェンスリー|IMAGINE三|イメージスリー|イメージオンリー,Imagen3
+[iI]magen [tT]hree|IMAGENIII|IMAGENスプレー|イメージンスリー|IMAGINEスピーカー|イメージェンスリー|IMAGINE三|イメージスリー|イメージオンリー,Imagen3
+[iI]magen [fF]our|IMAGENIV|IMAGENフォー|イメージンフォー|イメージフォー,Imagen4
+GOOGLE I ?O,Google I/O
+ディープサーチ,Deep Search
+ディープリサーチ|ディープセールス,Deep Research
+ジェミニ,Gemini
+アドバンスド,Advanced
+ベオスリー,Veo3
+CLOUD FOU,Claude4
 ウィスパー,Whisper
 トランスクライブ,Transcribe
 TWITTER,X
@@ -65,3 +71,9 @@ COMFYUI,ComfyUI
 GPTPRO,GPT Pro
 ミッドジャーニー,Midjourney
 ELEVENLABS,ElevenLabs
+フラッシュ,Flash
+[。、]*(。)+[。、 ]*,。
+[、 ]*、[、 ]*,、
+[、 ]*。[、 ]*,。
+[ 。、]*？[ 。、]*,？
+[ 。、]*！[ 。、]*,！
